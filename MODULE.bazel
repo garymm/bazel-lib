@@ -17,10 +17,12 @@ use_repo(ext, "copy_directory_toolchains")
 use_repo(ext, "copy_to_directory_toolchains")
 use_repo(ext, "jq_toolchains")
 use_repo(ext, "yq_toolchains")
+use_repo(ext, "coreutils_toolchains")
 
 register_toolchains(
     "@copy_directory_toolchains//:all",
     "@copy_to_directory_toolchains//:all",
     "@jq_toolchains//:all",
     "@yq_toolchains//:all",
+    "@coreutils_toolchains//:all"
 )
