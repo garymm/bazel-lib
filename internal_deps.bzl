@@ -4,7 +4,7 @@ Users should *not* need to install these. If users see a load()
 statement from these, that's a bug in our distribution.
 """
 
-load("//lib:repositories.bzl", "register_jq_toolchains", "register_yq_toolchains", "register_coreutils_toolchains")
+load("//lib:repositories.bzl", "register_coreutils_toolchains", "register_jq_toolchains", "register_yq_toolchains")
 load("//lib:utils.bzl", http_archive = "maybe_http_archive")
 
 # buildifier: disable=unnamed-macro
@@ -44,6 +44,15 @@ def bazel_lib_internal_deps():
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/stardoc/releases/download/0.5.1/stardoc-0.5.1.tar.gz",
             "https://github.com/bazelbuild/stardoc/releases/download/0.5.1/stardoc-0.5.1.tar.gz",
+        ],
+    )
+
+    http_archive(
+        name = "buildifier_prebuilt",
+        sha256 = "95387c9dded7f8e3bdd4c598bc2ca4fbb6366cb214fa52e7d7b689eb2f421e01",
+        strip_prefix = "buildifier-prebuilt-6.0.0",
+        urls = [
+            "https://github.com/keith/buildifier-prebuilt/archive/6.0.0.tar.gz",
         ],
     )
 
