@@ -1,8 +1,8 @@
 """Tests for write_source_files"""
 # Inspired by https://github.com/cgrindel/bazel-starlib/blob/main/updatesrc/private/updatesrc_update_test.bzl
 
-load("//lib/private:write_source_file.bzl", _write_source_file = "write_source_file")
 load("//lib/private:directory_path.bzl", "DirectoryPathInfo")
+load("//lib/private:write_source_file.bzl", _write_source_file = "write_source_file")
 
 def _write_source_file_test_impl_sh(ctx, in_file_path, out_file_path):
     test = ctx.actions.declare_file(
@@ -172,7 +172,7 @@ _write_source_file_test = rule(
     test = True,
 )
 
-def write_source_file_test(name, in_file, out_file):
+def write_source_file_test(name, in_file, out_file, check_that_out_file_exists = True, size = "small"):
     """Stamp a write_source_files executable and a test to run against it"""
 
     _write_source_file(
@@ -180,6 +180,7 @@ def write_source_file_test(name, in_file, out_file):
         in_file = in_file,
         out_file = out_file,
         diff_test = False,
+        check_that_out_file_exists = check_that_out_file_exists,
     )
 
     # Note that for testing we update the source files in the sandbox,
@@ -189,5 +190,5 @@ def write_source_file_test(name, in_file, out_file):
         write_source_file_target = name + "_updater",
         in_file = in_file,
         out_file = out_file,
-        timeout = "short",
+        size = size,
     )

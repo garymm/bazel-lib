@@ -4,7 +4,7 @@ load("//lib:stamping.bzl", "STAMP_ATTRS", "maybe_stamp")
 
 _yq_attrs = dict({
     "srcs": attr.label_list(
-        allow_files = [".yaml", ".json", ".xml"],
+        allow_files = True,
         mandatory = True,
         allow_empty = True,
     ),
@@ -60,6 +60,7 @@ def _yq_impl(ctx):
                 out = stamp_yaml.path,
             ),
             mnemonic = "ConvertStatusToYaml",
+            toolchain = "@aspect_bazel_lib//lib:yq_toolchain_type",
         )
     else:
         # create an empty stamp file as placeholder
@@ -91,6 +92,7 @@ def _yq_impl(ctx):
         command = cmd,
         env = {"STAMP": escape_bin_dir + stamp_yaml.path},
         mnemonic = "Yq",
+        toolchain = "@aspect_bazel_lib//lib:yq_toolchain_type",
     )
 
     return DefaultInfo(files = depset(outs), runfiles = ctx.runfiles(outs))

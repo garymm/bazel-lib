@@ -1,7 +1,13 @@
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("//lib:transitions.bzl", "platform_transition_binary", "platform_transition_filegroup")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 load("//lib:diff_test.bzl", "diff_test")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load(
+    "//lib:transitions.bzl",
+    "platform_transition_binary",
+    "platform_transition_filegroup",
+    "platform_transition_test",
+)
 
 platform(
     name = "armv7_linux",
@@ -109,6 +115,12 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+go_test(
+    name = "test_transition_test",
+    size = "small",
+    srcs = ["simple_test.go"],
+)
+
 platform_transition_binary(
     name = "transitioned_go_binary_x86_64",
     binary = ":test_transition_binary",
@@ -121,8 +133,31 @@ platform_transition_binary(
     target_platform = "arm64_linux",
 )
 
+platform_transition_test(
+    name = "transitioned_go_test_x86_64",
+    binary = ":test_transition_test",
+    # only run this test on an x86_64 host
+    target_compatible_with = [] if sorted(HOST_CONSTRAINTS) == [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ] else ["@platforms//:incompatible"],
+    target_platform = "x86_64_linux",
+)
+
+platform_transition_test(
+    name = "transitioned_go_test_arm64",
+    binary = ":test_transition_test",
+    # only run this test on an x86_64 host
+    target_compatible_with = [] if sorted(HOST_CONSTRAINTS) == [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ] else ["@platforms//:incompatible"],
+    target_platform = "arm64_linux",
+)
+
 sh_test(
     name = "test_go_binary_is_x86_64",
+    size = "small",
     srcs = ["test_file_type_contains.sh"],
     args = [
         "$(rootpath :transitioned_go_binary_x86_64)",
@@ -133,6 +168,7 @@ sh_test(
 
 sh_test(
     name = "test_go_binary_is_arm64",
+    size = "small",
     srcs = ["test_file_type_contains.sh"],
     args = [
         "$(rootpath :transitioned_go_binary_arm64)",
@@ -141,9 +177,31 @@ sh_test(
     data = [":transitioned_go_binary_arm64"],
 )
 
+sh_test(
+    name = "test_go_test_is_x86_64",
+    size = "small",
+    srcs = ["test_file_type_contains.sh"],
+    args = [
+        "$(rootpath :transitioned_go_test_x86_64)",
+        "x86-64",
+    ],
+    data = [":transitioned_go_test_x86_64"],
+)
+
+sh_test(
+    name = "test_go_test_is_arm64",
+    size = "small",
+    srcs = ["test_file_type_contains.sh"],
+    args = [
+        "$(rootpath :transitioned_go_test_arm64)",
+        "aarch64",
+    ],
+    data = [":transitioned_go_test_arm64"],
+)
+
 go_library(
     name = "transitions_lib",
     srcs = ["main.go"],
-    importpath = "github.com/aspect-build/bazel-lib/lib/tests/transitions",
+    importpath = "github.com/bazel-contrib/bazel-lib/lib/tests/transitions",
     visibility = ["//visibility:private"],
 )

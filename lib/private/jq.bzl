@@ -1,6 +1,8 @@
 """Implementation for jq rule"""
 
 load("//lib:stamping.bzl", "STAMP_ATTRS", "maybe_stamp")
+load(":expand_variables.bzl", "expand_variables")
+load(":strings.bzl", "split_args")
 
 _jq_attrs = dict({
     "srcs": attr.label_list(
@@ -8,9 +10,13 @@ _jq_attrs = dict({
         mandatory = True,
         allow_empty = True,
     ),
+    "data": attr.label_list(
+        allow_files = True,
+    ),
     "filter": attr.string(),
     "filter_file": attr.label(allow_single_file = True),
     "args": attr.string_list(),
+    "expand_args": attr.bool(),
     "out": attr.output(),
     "_parse_status_file_filter": attr.label(
         allow_single_file = True,
@@ -22,8 +28,15 @@ def _jq_impl(ctx):
     jq_bin = ctx.toolchains["@aspect_bazel_lib//lib:jq_toolchain_type"].jqinfo.bin
 
     out = ctx.outputs.out or ctx.actions.declare_file(ctx.attr.name + ".json")
-    args = ctx.attr.args
+    if ctx.attr.expand_args:
+        args = []
+        for a in ctx.attr.args:
+            args += split_args(expand_variables(ctx, ctx.expand_location(a, targets = ctx.attr.data), outs = [out]))
+    else:
+        args = ctx.attr.args
+
     inputs = ctx.files.srcs[:]
+    inputs += ctx.files.data
 
     if not ctx.attr.filter and not ctx.attr.filter_file:
         fail("Must provide a filter or a filter_file")
@@ -35,7 +48,7 @@ def _jq_impl(ctx):
         args = args + ["--null-input"]
 
     if ctx.attr.filter_file:
-        args = args + ["--from-file '%s'" % ctx.file.filter_file.path]
+        args = args + ["--from-file", ctx.file.filter_file.path]
         inputs.append(ctx.file.filter_file)
 
     stamp = maybe_stamp(ctx)
@@ -54,21 +67,22 @@ def _jq_impl(ctx):
                 out = stamp_json.path,
             ),
             mnemonic = "ConvertStatusToJson",
+            toolchain = "@aspect_bazel_lib//lib:jq_toolchain_type",
         )
         inputs.append(stamp_json)
 
-        # jq says of --argfile:
-        # > Do not use. Use --slurpfile instead.
-        # > (This option is like --slurpfile, but when the file has just one text,
-        # > then that is used, else an array of texts is used as in --slurpfile.)
-        # However there's no indication that it's deprecated. Maybe it's a style convention.
-        # For our purposes, "$STAMP.BUILD_TIMESTAMP" looks a lot more sensible in a BUILD file
-        # than "$STAMP[0].BUILD_TIMESTAMP".
-        args = args + ["--argfile", "STAMP", stamp_json.path]
+        args = args + ["--slurpfile", "STAMP", stamp_json.path]
+
+    # quote args that contain spaces
+    quoted_args = []
+    for a in args:
+        if " " in a:
+            a = "'{}'".format(a)
+        quoted_args.append(a)
 
     cmd = "{jq} {args} {filter} {sources} > {out}".format(
         jq = jq_bin.path,
-        args = " ".join(args),
+        args = " ".join(quoted_args),
         filter = "'%s'" % ctx.attr.filter if ctx.attr.filter else "",
         sources = " ".join(["'%s'" % file.path for file in ctx.files.srcs]),
         out = out.path,
@@ -80,6 +94,7 @@ def _jq_impl(ctx):
         outputs = [out],
         command = cmd,
         mnemonic = "Jq",
+        toolchain = "@aspect_bazel_lib//lib:jq_toolchain_type",
     )
 
     return DefaultInfo(files = depset([out]), runfiles = ctx.runfiles([out]))

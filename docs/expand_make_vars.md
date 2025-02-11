@@ -2,41 +2,6 @@
 
 Public API for expanding variables
 
-<a id="expand_template"></a>
-
-## expand_template
-
-<pre>
-expand_template(<a href="#expand_template-name">name</a>, <a href="#expand_template-data">data</a>, <a href="#expand_template-is_executable">is_executable</a>, <a href="#expand_template-out">out</a>, <a href="#expand_template-stamp">stamp</a>, <a href="#expand_template-stamp_substitutions">stamp_substitutions</a>, <a href="#expand_template-substitutions">substitutions</a>, <a href="#expand_template-template">template</a>)
-</pre>
-
-Template expansion
-
-This performs a simple search over the template file for the keys in substitutions,
-and replaces them with the corresponding values.
-
-Values may also use location templates as documented in
-[expand_locations](https://github.com/aspect-build/bazel-lib/blob/main/docs/expand_make_vars.md#expand_locations)
-as well as [configuration variables](https://docs.bazel.build/versions/main/skylark/lib/ctx.html#var)
-such as `$(BINDIR)`, `$(TARGET_CPU)`, and `$(COMPILATION_MODE)` as documented in
-[expand_variables](https://github.com/aspect-build/bazel-lib/blob/main/docs/expand_make_vars.md#expand_variables).
-
-
-**ATTRIBUTES**
-
-
-| Name  | Description | Type | Mandatory | Default |
-| :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="expand_template-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
-| <a id="expand_template-data"></a>data |  List of targets for additional lookup information.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
-| <a id="expand_template-is_executable"></a>is_executable |  Whether to mark the output file as executable.   | Boolean | optional | False |
-| <a id="expand_template-out"></a>out |  Where to write the expanded file.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
-| <a id="expand_template-stamp"></a>stamp |  Whether to encode build information into the output. Possible values:<br><br>    - <code>stamp = 1</code>: Always stamp the build information into the output, even in         [--nostamp](https://docs.bazel.build/versions/main/user-manual.html#flag--stamp) builds.         This setting should be avoided, since it is non-deterministic.         It potentially causes remote cache misses for the target and         any downstream actions that depend on the result.     - <code>stamp = 0</code>: Never stamp, instead replace build information by constant values.         This gives good build result caching.     - <code>stamp = -1</code>: Embedding of build information is controlled by the         [--[no]stamp](https://docs.bazel.build/versions/main/user-manual.html#flag--stamp) flag.         Stamped targets are not rebuilt unless their dependencies change.   | Integer | optional | -1 |
-| <a id="expand_template-stamp_substitutions"></a>stamp_substitutions |  Mapping of strings to substitutions.<br><br>            There are overlayed on top of substitutions when stamping is enabled             for the target.<br><br>            Substitutions can contain $(execpath :target) and $(rootpath :target)             expansions, $(MAKEVAR) expansions and {{STAMP_VAR}} expansions when             stamping is enabled for the target.   | <a href="https://bazel.build/docs/skylark/lib/dict.html">Dictionary: String -> String</a> | optional | {} |
-| <a id="expand_template-substitutions"></a>substitutions |  Mapping of strings to substitutions.<br><br>            Substitutions can contain $(execpath :target) and $(rootpath :target)             expansions, $(MAKEVAR) expansions and {{STAMP_VAR}} expansions when             stamping is enabled for the target.   | <a href="https://bazel.build/docs/skylark/lib/dict.html">Dictionary: String -> String</a> | optional | {} |
-| <a id="expand_template-template"></a>template |  The template file to expand.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
-
-
 <a id="expand_locations"></a>
 
 ## expand_locations
@@ -77,11 +42,15 @@ The deprecated `$(location)` and `$(locations)` expansions returns either the ex
 | :------------- | :------------- | :------------- |
 | <a id="expand_locations-ctx"></a>ctx |  context   |  none |
 | <a id="expand_locations-input"></a>input |  String to be expanded   |  none |
-| <a id="expand_locations-targets"></a>targets |  List of targets for additional lookup information.   |  <code>[]</code> |
+| <a id="expand_locations-targets"></a>targets |  List of targets for additional lookup information.   |  `[]` |
 
 **RETURNS**
 
 The expanded path or the original path
+
+**DEPRECATED**
+
+Use vanilla `ctx.expand_location(input, targets = targets)` instead
 
 
 <a id="expand_variables"></a>
@@ -89,10 +58,15 @@ The expanded path or the original path
 ## expand_variables
 
 <pre>
-expand_variables(<a href="#expand_variables-ctx">ctx</a>, <a href="#expand_variables-s">s</a>, <a href="#expand_variables-outs">outs</a>, <a href="#expand_variables-output_dir">output_dir</a>, <a href="#expand_variables-attribute_name">attribute_name</a>)
+expand_variables(<a href="#expand_variables-ctx">ctx</a>, <a href="#expand_variables-s">s</a>, <a href="#expand_variables-outs">outs</a>, <a href="#expand_variables-attribute_name">attribute_name</a>)
 </pre>
 
 Expand make variables and substitute like genrule does.
+
+Bazel [pre-defined variables](https://bazel.build/reference/be/make-variables#predefined_variables)
+are expanded however only `$@`, `$(@D)` and `$(RULEDIR)` of
+[pre-defined genrule variables](https://bazel.build/reference/be/make-variables#predefined_genrule_variables)
+are supported.
 
 This function is the same as ctx.expand_make_variables with the additional
 genrule-like substitutions of:
@@ -133,9 +107,8 @@ for more information of how these special variables are expanded.
 | :------------- | :------------- | :------------- |
 | <a id="expand_variables-ctx"></a>ctx |  starlark rule context   |  none |
 | <a id="expand_variables-s"></a>s |  expression to expand   |  none |
-| <a id="expand_variables-outs"></a>outs |  declared outputs of the rule, for expanding references to outputs   |  <code>[]</code> |
-| <a id="expand_variables-output_dir"></a>output_dir |  whether the rule is expected to output a directory (TreeArtifact) Deprecated. For backward compatability with @aspect_bazel_lib 1.x. Pass output tree artifacts to outs instead.   |  <code>False</code> |
-| <a id="expand_variables-attribute_name"></a>attribute_name |  name of the attribute containing the expression. Used for error reporting.   |  <code>"args"</code> |
+| <a id="expand_variables-outs"></a>outs |  declared outputs of the rule, for expanding references to outputs   |  `[]` |
+| <a id="expand_variables-attribute_name"></a>attribute_name |  name of the attribute containing the expression. Used for error reporting.   |  `"args"` |
 
 **RETURNS**
 

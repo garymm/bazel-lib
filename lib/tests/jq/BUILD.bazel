@@ -1,6 +1,6 @@
-load("//lib/tests/jq:diff_test.bzl", "diff_test")
 load("//lib:jq.bzl", "jq")
 load("//lib:testing.bzl", "assert_contains")
+load("//lib/tests/jq:diff_test.bzl", "diff_test")
 
 exports_files([
     "a_pretty.json",
@@ -79,6 +79,26 @@ diff_test(
     file2 = "null.json",
 )
 
+# Data files are passed in correctly
+jq(
+    name = "case_data_input_flag",
+    srcs = [],
+    args = [
+        "--slurpfile",
+        "a",
+        "$(location a_pretty.json)",
+    ],
+    data = ["a_pretty.json"],
+    expand_args = True,
+    filter = "$a[0]",
+)
+
+diff_test(
+    name = "case_data_input_flag_test",
+    file1 = ":case_data_input_flag",
+    file2 = "a_pretty.json",
+)
+
 # Load filter from file
 jq(
     name = "case_filter_file",
@@ -105,8 +125,8 @@ diff_test(
             # Don't directly reference $STAMP as it's only set when stamping
             "$ARGS.named.STAMP as $stamp",
             # Provide a default using the "alternative operator"
-            ".foo = ($stamp.BUILD_EMBED_LABEL // \"<unstamped>\")",
-            ".value = ($stamp.BUILD_TIMESTAMP // 1 | tonumber)",
+            ".foo = ($stamp[0].BUILD_EMBED_LABEL // \"<unstamped>\")",
+            ".value = ($stamp[0].BUILD_TIMESTAMP // 1 | tonumber)",
         ]),
         stamp = stamp,
     )

@@ -1,5 +1,3 @@
-# These loads are in the docs/ package rather than anything users depend on
-# so that the dependency on stardoc doesn't leak to them.
 load("//lib:docs.bzl", "stardoc_with_diff_test", "update_docs")
 
 stardoc_with_diff_test(
@@ -25,6 +23,7 @@ stardoc_with_diff_test(
 stardoc_with_diff_test(
     name = "docs",
     bzl_library_target = "//lib:docs",
+    tags = ["some_random_tag_for_testing_pr746_regression"],
 )
 
 stardoc_with_diff_test(
@@ -45,12 +44,21 @@ stardoc_with_diff_test(
 stardoc_with_diff_test(
     name = "params_file",
     bzl_library_target = "//lib:params_file",
-    func_template = "//docs/templates:func_html.vm",
 )
 
 stardoc_with_diff_test(
     name = "paths",
     bzl_library_target = "//lib:paths",
+)
+
+stardoc_with_diff_test(
+    name = "lists",
+    bzl_library_target = "//lib:lists",
+)
+
+stardoc_with_diff_test(
+    name = "tar",
+    bzl_library_target = "//lib:tar",
 )
 
 stardoc_with_diff_test(
@@ -143,4 +151,16 @@ stardoc_with_diff_test(
     bzl_library_target = "//lib:strings",
 )
 
-update_docs()
+stardoc_with_diff_test(
+    name = "bats",
+    bzl_library_target = "//lib:bats",
+)
+
+stardoc_with_diff_test(
+    name = "resource_sets",
+    bzl_library_target = "//lib:resource_sets",
+)
+
+update_docs(
+    tags = ["skip-on-bazel6"],
+)

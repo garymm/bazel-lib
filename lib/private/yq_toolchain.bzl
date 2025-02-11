@@ -49,7 +49,7 @@ YQ_PLATFORMS = {
 }
 
 # Note: this is not the latest release, because it has significant breaking changes.
-# See https://github.com/aspect-build/bazel-lib/pull/421
+# See https://github.com/bazel-contrib/bazel-lib/pull/421
 DEFAULT_YQ_VERSION = "4.25.2"
 
 # https://github.com/mikefarah/yq/releases
@@ -314,7 +314,7 @@ YqInfo = provider(
 )
 
 def _yq_toolchain_impl(ctx):
-    binary = ctx.attr.bin.files.to_list()[0]
+    binary = ctx.file.bin
 
     # Make the $(YQ_BIN) variable available in places like genrules.
     # See https://docs.bazel.build/versions/main/be/make-variables.html#custom_variables
